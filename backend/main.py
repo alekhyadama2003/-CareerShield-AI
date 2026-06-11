@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
+from backend.job_matcher import calculate_match
 import shutil
 import os
 import fitz
@@ -68,3 +69,16 @@ async def upload_resume(file: UploadFile = File(...)):
         "skills": skills,
         "resume_text": text[:1000]
     }
+@app.post("/match-job")
+async def match_job(job_skills: list[str]):
+    
+    resume_skills = [
+        "Python",
+        "SQL",
+        "FastAPI",
+        "Git"
+    ]
+
+    result = calculate_match(resume_skills, job_skills)
+
+    return result
