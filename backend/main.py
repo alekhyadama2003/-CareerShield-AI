@@ -1,42 +1,56 @@
 from fastapi import FastAPI, UploadFile, File
-from backend.job_matcher import calculate_match
+from pydantic import BaseModel
 import shutil
 import os
 import fitz
 
+from backend.database import SessionLocal, Job
+from backend.job_matcher import calculate_match
+
 app = FastAPI()
 
+# ---------------------------
+# Upload folder setup
+# ---------------------------
 UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# ---------------------------
+# Skill extractor DB
+# ---------------------------
 SKILLS_DB = [
-    "Java",
-    "Python",
-    "SQL",
-    "Spring Boot",
-    "REST API",
-    "HTML",
-    "CSS",
-    "JavaScript",
-    "React",
-    "Git",
-    "GitHub",
-    "Maven",
-    "DSA",
-    "DBMS",
-    "OOP",
-    "Computer Networks"
+    "Java", "Python", "SQL", "Spring Boot", "REST API",
+    "HTML", "CSS", "JavaScript", "React",
+    "Git", "GitHub", "Maven",
+    "DSA", "DBMS", "OOP", "Computer Networks"
 ]
 
 def extract_skills(text):
     found_skills = []
-
     for skill in SKILLS_DB:
         if skill.lower() in text.lower():
             found_skills.append(skill)
-
     return found_skills
 
+# ---------------------------
+# DB helper function
+# ---------------------------
+def get_jobs_from_db():
+    db = SessionLocal()
+    jobs = db.query(Job).all()
+    db.close()
 
+    return [
+        {
+            "role": job.role,
+            "skills": job.skills
+        }
+        for job in jobs
+    ]
+
+# ---------------------------
+# Home API
+# ---------------------------
 @app.get("/")
 def home():
     return {
@@ -44,9 +58,12 @@ def home():
         "message": "Workforce Intelligence for the AI Era"
     }
 
-
+# ---------------------------
+# Upload Resume API
+# ---------------------------
 @app.post("/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
+
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
     with open(file_path, "wb") as buffer:
@@ -56,10 +73,8 @@ async def upload_resume(file: UploadFile = File(...)):
 
     if file.filename.endswith(".pdf"):
         pdf = fitz.open(file_path)
-
         for page in pdf:
             text += page.get_text()
-
         pdf.close()
 
     skills = extract_skills(text)
@@ -69,16 +84,54 @@ async def upload_resume(file: UploadFile = File(...)):
         "skills": skills,
         "resume_text": text[:1000]
     }
+
+# ---------------------------
+# Request model
+# ---------------------------
+class SkillRequest(BaseModel):
+    skills: list[str]
+
+# ---------------------------
+# Match Job API (SQL + AI)
+# ---------------------------
 @app.post("/match-job")
-async def match_job(job_skills: list[str]):
-    
-    resume_skills = [
-        "Python",
-        "SQL",
-        "FastAPI",
-        "Git"
-    ]
+async def match_job(data: SkillRequest):
 
-    result = calculate_match(resume_skills, job_skills)
+    resume_skills = data.skills
 
-    return result
+    results = []
+
+    jobs = get_jobs_from_db()
+
+    for job in jobs:
+        score, matched, missing = calculate_match(
+            resume_skills,
+            job["skills"]
+        )
+
+        results.append({
+            "role": job["role"],
+            "match_score": score,
+            "matched_skills": matched,
+            "missing_skills": missing
+        })
+
+    results = sorted(results, key=lambda x: x["match_score"], reverse=True)
+
+    best = results[0]
+
+    missing_skills = best["missing_skills"]
+
+    if best["match_score"] >= 80:
+        level = "Strong Profile 🚀"
+    elif best["match_score"] >= 50:
+        level = "Moderate Profile ⚡"
+    else:
+        level = "Beginner Profile 📚"
+
+    return {
+        "best_match": best,
+        "profile_level": level,
+        "recommendation": f"Focus on: {', '.join(missing_skills) if missing_skills else 'No major gaps'}",
+        "all_matches": results
+    }
