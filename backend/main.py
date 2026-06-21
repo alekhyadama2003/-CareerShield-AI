@@ -6,6 +6,8 @@ import fitz
 
 from backend.database import SessionLocal, Job
 from backend.job_matcher import calculate_match
+from backend.ats_analyzer import calculate_ats_score
+
 
 app = FastAPI()
 
@@ -90,6 +92,10 @@ async def upload_resume(file: UploadFile = File(...)):
 # ---------------------------
 class SkillRequest(BaseModel):
     skills: list[str]
+
+class ATSRequest(BaseModel):
+    resume_skills: list[str]
+    job_skills: list[str]
 
 # ---------------------------
 # Match Job API (SQL + AI)
@@ -200,3 +206,14 @@ def dashboard():
 
     "skill_frequency": skill_count
 }
+
+
+@app.post("/ats-score")
+async def ats_score(data: ATSRequest):
+
+    result = calculate_ats_score(
+        data.resume_skills,
+        data.job_skills
+    )
+
+    return result
