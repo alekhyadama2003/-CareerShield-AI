@@ -163,3 +163,40 @@ async def match_job(data: SkillRequest):
         "learning_roadmap": learning_roadmap,
         "all_matches": results
     }
+
+# ---------------------------
+# Dashboard API
+# ---------------------------
+
+@app.get("/dashboard")
+def dashboard():
+
+    jobs = get_jobs_from_db()
+
+    skill_count = {}
+
+    for job in jobs:
+        for skill in job["skills"]:
+
+            if skill not in skill_count:
+                skill_count[skill] = 0
+
+            skill_count[skill] += 1
+            most_demanded_skill = max(skill_count, key=skill_count.get)
+
+    career_insight = (
+    f"{most_demanded_skill} is currently the most demanded skill "
+    f"across available jobs in CareerShield AI."
+)
+
+    return {
+    "total_jobs": len(jobs),
+
+    "roles": [job["role"] for job in jobs],
+
+    "most_demanded_skill": most_demanded_skill,
+
+    "career_insight": career_insight,
+
+    "skill_frequency": skill_count
+}
