@@ -7,6 +7,10 @@ import fitz
 from backend.database import SessionLocal, Job
 from backend.job_matcher import calculate_match
 from backend.ats_analyzer import calculate_ats_score
+from backend.resume_reviewer import review_resume
+from backend.career_recommender import recommend_careers
+from backend.learning_tracker import learning_tracker
+
 
 
 app = FastAPI()
@@ -96,7 +100,14 @@ class SkillRequest(BaseModel):
 class ATSRequest(BaseModel):
     resume_skills: list[str]
     job_skills: list[str]
-
+class ResumeReviewRequest(BaseModel):
+    resume_skills: list[str]
+    job_skills: list[str]
+class CareerRequest(BaseModel):
+    skills: list[str]
+class LearningTrackerRequest(BaseModel):
+    current_skills: list[str]
+    target_role: str
 # ---------------------------
 # Match Job API (SQL + AI)
 # ---------------------------
@@ -214,6 +225,46 @@ async def ats_score(data: ATSRequest):
     result = calculate_ats_score(
         data.resume_skills,
         data.job_skills
+    )
+
+    return result
+# ---------------------------
+# Resume Review API
+# ---------------------------
+
+@app.post("/resume-review")
+async def resume_review(data: ResumeReviewRequest):
+
+    result = review_resume(
+        data.resume_skills,
+        data.job_skills
+    )
+
+    return result
+
+# ---------------------------
+# Career Recommender API
+# ---------------------------
+
+@app.post("/career-recommendation")
+async def career_recommendation(data: CareerRequest):
+
+    result = recommend_careers(data.skills)
+
+    return result
+
+# ---------------------------
+# Learning Tracker API
+# ---------------------------
+
+@app.post("/learning-tracker")
+async def learning_tracker_api(
+    data: LearningTrackerRequest
+):
+
+    result = learning_tracker(
+        data.current_skills,
+        data.target_role
     )
 
     return result
