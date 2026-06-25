@@ -72,7 +72,7 @@ ResumeReader  SkillExtractor   DatabaseManager
 | Database | SQLite via `sqlite3` (standard library) |
 | DSA | Trie (skill lookup), MinHeap (job ranking), HashMap (gap frequency) |
 | PDF Parsing | `pdfplumber` / `PyPDF2` (optional) |
-| No APIs | Fully offline, no external services |
+|Artificial Intelligence (Rule-based NLP)|
 
 ---
 
