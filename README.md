@@ -2,7 +2,7 @@
 
 > **AI-powered career intelligence system — Resume analysis, job matching, skill gap identification, and personalized learning roadmaps.**
 
-Built with **Python (OOP)** · **SQL / SQLite (DBMS)** · **DSA (Trie, MinHeap, HashMap)**
+Built with **Python (OOP)** · **SQL / SQLite (DBMS)** · **DSA (Trie, MinHeap, HashMap)** · **Artificial Intelligence(NLP)-rulebased**
 
 ---
 
